@@ -6,7 +6,6 @@ def hello_world():
     return 'Hello, World!!! Hi.'
 
 @app.route('/hello')
-def hello_world():
+def hello():
     return 'Crazy'
-
 
