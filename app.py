@@ -40,5 +40,12 @@ def now():
     assert title is not None
 
     nc.add(title, time_str)
-    return f"Added {title}: {time_str}"
+
+    page_str = f"<p>Added {title}: {time_str} </p>\n"
+    page_str += f"<p>Current contents:</p>"
+
+    for row in nc.get_table():
+        page_str += f"<p>{row}</p>\n"
+
+    return page_str
 
