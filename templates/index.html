@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>NFC | Home </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="" />
+    <meta property="og:image" content="" />
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="NFC" />
+
+    <link href="static/css/fonts.b685ac6f654695232de7b82a9143a46f9e049c8e3af3a21d9737b01f4be211d1.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" media="screen"
+        href="static/css/main.40ca3a860425083862b7ebd55447caec5c4384573f0cb098b8d06a91e8dace2e.css" />
+
+</head>
+
+<body>
+    <div class="content">
+        <header>
+            <div class="main">
+                <a href="">NFC</a>
+            </div>
+            <nav>
+
+
+            </nav>
+        </header>
+
+        {% if new_item %}
+        <h1> Added: {{ new_item.title }} {{new_item.time}} </h1>
+        {% endif %}
+
+        <main class="list">
+            <div class="site-description"></div>
+
+            <p>Current contents:</p>
+            <div class="description" style="max-height: 30em; overflow: auto;">
+                {% for group in groups %}
+                {% for item in group %}
+                <span style="display: inline-block; white-space: nowrap;">
+                    <span style="display: inline-block; min-width: 20ch">{{ item.title }}</span>
+                    <time>{{ item.time }}</time>
+                </span>
+                <br>
+                {% endfor %}
+                <br>
+                {% endfor %}
+            </div>
+
+            <!-- <section class="list-item">
+                <h1 class="title"><a href="/posts/hello/">Hello title</a></h1>
+                <time>Jan 1, 0001</time>
+                <br>
+                <div class="description">
+
+                    Description
+
+                </div>
+                <a class="readmore" href="/posts/hello/">Read more ⟶</a>
+            </section> -->
+
+
+        </main>
+        <footer>
+            <div style="display:flex">
+                -tev 2022
+            </div>
+        </footer>
+    </div>
+
+</body>
+
+</html>

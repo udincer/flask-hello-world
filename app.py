@@ -1,51 +1,118 @@
 import os
+from collections import namedtuple
+import string
+import random
+from types import SimpleNamespace
 
 import pandas as pd
-from flask import Flask
-from flask import request
+from flask import Flask, redirect, request, render_template, url_for
 
 from notion_connection import NotionConnection
 
 app = Flask(__name__)
 nc = NotionConnection()
 
-
-@app.route("/")
-def hello_world():
-    return "Hello, World!!! Hi."
+state = SimpleNamespace(sid_list=[])
 
 
-@app.route("/hello")
-def hello():
-    token = request.args.get("token")
-    true_token = os.getenv("SECRET_TOKEN")
-
-    if token == true_token:
-        return f"Correct token {token}"
-    else:
-        return f"Incorrect token {token}"
+class BadTokenException(Exception):
+    pass
 
 
-@app.route("/now")
-def now():
+class DuplicateRequestException(Exception):
+    pass
+
+
+class RedirectException(Exception):
+    def __init__(self, message, url):
+        super().__init__(message)
+        self.url = url
+
+
+def check_token():
     token = request.args.get("token")
     true_token = os.getenv("SECRET_TOKEN")
 
     if token != true_token:
-        return f"Incorrect token {token}"
+        raise BadTokenException(f"Incorrect token {token}")
+    else:
+        return True
+
+
+def check_sid(caller):
+    sid = request.args.get("sid")
+    if sid is None:
+        random_sid = "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=6)
+        )
+        raise RedirectException(
+            "redirecting", url=url_for(caller, sid=random_sid, **request.args)
+        )
+
+    if sid in state.sid_list:
+        raise DuplicateRequestException()
+    else:
+        state.sid_list.append(sid)
+        state.sid_list = state.sid_list[-10:]
+
+    return sid
+
+
+def get_current_table_contents_str():
+    page_str = f"<p>Current contents:</p>"
+
+    page_str += f"<p>"
+    for row in nc.get_table():
+        page_str += f"{row}<br>\n"
+    page_str += f"</p>"
+    return page_str
+
+
+@app.route("/")
+def hello_world():
+    groups = nc.get_table_groupby_date()
+    return render_template("index.html", groups=groups)
+
+
+@app.route("/hello")
+def hello():
+    sid = check_sid(caller='hello')
+
+    page_str = f"sid: {sid}"
+    page_str += get_current_table_contents_str()
+    return page_str
+
+
+@app.route("/now")
+def now():
+    check_sid(caller='now')
+    check_token()
 
     title = request.args.get("title")
-    time_str = pd.Timestamp.now(tz='America/Los_Angeles').isoformat()
+    time_str = pd.Timestamp.now(tz="America/Los_Angeles").isoformat()
 
     assert title is not None
 
     nc.add(title, time_str)
 
-    page_str = f"<p>Added {title}: {time_str} </p>\n"
-    page_str += f"<p>Current contents:</p>"
+    Item = namedtuple("Item", "title time")
+    new_item = Item(title=title, time=time_str[:19])
 
-    for row in nc.get_table():
-        page_str += f"<p>{row}</p>\n"
+    groups = nc.get_table_groupby_date()
 
-    return page_str
+    return render_template("index.html", groups=groups, new_item=new_item)
 
+
+@app.errorhandler(BadTokenException)
+def handle_bad_token(e):
+    return f"Bad token!\n{e}"
+
+
+@app.errorhandler(RedirectException)
+def handle_redirect(e):
+    return redirect(e.url)
+
+
+@app.errorhandler(DuplicateRequestException)
+def handle_redirect(e):
+    return f"Duplicate request! {e}"
