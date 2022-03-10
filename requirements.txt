@@ -3,3 +3,4 @@ Gunicorn
 notion-client
 pandas
 redis
+requests
