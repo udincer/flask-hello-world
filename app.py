@@ -3,14 +3,19 @@ from collections import namedtuple
 import string
 import random
 from types import SimpleNamespace
+import logging
 
 import pandas as pd
 from flask import Flask, redirect, request, render_template, url_for
 
 from notion_connection import NotionConnection
+from redis_connection import RedisConnection, RedisConnectionException
 
 app = Flask(__name__)
 nc = NotionConnection()
+
+rc = RedisConnection()
+
 
 state = SimpleNamespace(sid_list=[])
 
@@ -49,11 +54,19 @@ def check_sid(caller):
             "redirecting", url=url_for(caller, sid=random_sid, **request.args)
         )
 
-    if sid in state.sid_list:
-        raise DuplicateRequestException()
-    else:
-        state.sid_list.append(sid)
-        state.sid_list = state.sid_list[-10:]
+    try:
+        if rc.check_sid(sid):
+            raise DuplicateRequestException()
+        else:
+            rc.add_sid(sid)
+    except RedisConnectionException as e:  # fallback to local
+        logging.warning('Could not connect to redis, falling back to local state')
+
+        if sid in state.sid_list:
+            raise DuplicateRequestException()
+        else:
+            state.sid_list.append(sid)
+            state.sid_list = state.sid_list[-10:]
 
     return sid
 
@@ -76,7 +89,7 @@ def hello_world():
 
 @app.route("/hello")
 def hello():
-    sid = check_sid(caller='hello')
+    sid = check_sid(caller="hello")
 
     page_str = f"sid: {sid}"
     page_str += get_current_table_contents_str()
@@ -85,7 +98,7 @@ def hello():
 
 @app.route("/now")
 def now():
-    check_sid(caller='now')
+    check_sid(caller="now")
     check_token()
 
     title = request.args.get("title")
