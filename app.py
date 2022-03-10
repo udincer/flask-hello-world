@@ -10,6 +10,7 @@ from flask import Flask, redirect, request, render_template, url_for
 
 from notion_connection import NotionConnection
 from redis_connection import RedisConnection, RedisConnectionException
+from toggl_connection import TogglConnection
 
 app = Flask(__name__)
 nc = NotionConnection()
@@ -114,6 +115,21 @@ def now():
     groups = nc.get_table_groupby_date()
 
     return render_template("index.html", groups=groups, new_item=new_item)
+
+
+@app.route("/toggl")
+def toggl_start():
+    check_token()
+
+    tc = TogglConnection()
+    
+    title = request.args.get("title")
+    project = request.args.get("project")
+
+    tc.stop_current_timer()
+    tc.start_timer(title, project)
+
+    return tc.get_current()
 
 
 @app.errorhandler(BadTokenException)
