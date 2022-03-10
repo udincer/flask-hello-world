@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>NFC | Home </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="" />
+    <meta property="og:image" content="" />
+    <link rel="alternate" type="application/rss+xml" href="/index.xml" title="NFC" />
+
+    <link href="static/css/fonts.b685ac6f654695232de7b82a9143a46f9e049c8e3af3a21d9737b01f4be211d1.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" media="screen"
+        href="static/css/main.40ca3a860425083862b7ebd55447caec5c4384573f0cb098b8d06a91e8dace2e.css" />
+
+</head>
+
+<body>
+    <div class="content">
+        <header>
+            <div class="main">
+                <a href="">Toggl</a>
+            </div>
+            <nav>
+
+
+            </nav>
+        </header>
+
+        {% if status %}
+        <h1> Status: {{ status }} </h1>
+        {% endif %}
+
+        <main class="list">
+            <div class="site-description"></div>
+
+            {% if current_data %}
+
+            <section class="list-item">
+                <h2 class="title"><a href="https://track.toggl.com/timer">{{ current_data.description }}</a></h2>
+                <time>{{ current_data.start_time_LA }}</time>
+                <br>
+                <div class="description">
+
+                    Description
+
+                </div>
+            </section>
+
+            {% endif %}
+
+
+        </main>
+        <footer>
+            <div style="display:flex">
+                -tev 2022
+            </div>
+        </footer>
+    </div>
+
+</body>
+
+</html>

@@ -61,7 +61,7 @@ def check_sid(caller):
         else:
             rc.add_sid(sid)
     except RedisConnectionException as e:  # fallback to local
-        logging.warning('Could not connect to redis, falling back to local state')
+        logging.warning("Could not connect to redis, falling back to local state")
 
         if sid in state.sid_list:
             raise DuplicateRequestException()
@@ -122,14 +122,24 @@ def toggl_start():
     check_token()
 
     tc = TogglConnection()
-    
+
     title = request.args.get("title")
     project = request.args.get("project")
 
-    tc.stop_current_timer()
-    tc.start_timer(title, project)
+    current_timer = tc.get_current()
+    if current_timer is not None:  # a timer is running
+        if current_timer["description"] == title:  # activity is same
+            tc.stop_current_timer()
+            return render_template("timer.html", status="Stopped")
+        else:  # activity is different
+            tc.stop_current_timer()
+            tc.start_timer(title, project)
+    else:  # no timer running
+        tc.start_timer(title, project)
 
-    return tc.get_current()
+    return render_template(
+        "timer.html", status="Running", current_data=tc.get_current()
+    )
 
 
 @app.errorhandler(BadTokenException)
