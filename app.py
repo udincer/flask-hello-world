@@ -7,12 +7,15 @@ import logging
 
 import pandas as pd
 from flask import Flask, redirect, request, render_template, url_for
+from flask_cors import cross_origin
 
 from notion_connection import NotionConnection
 from redis_connection import RedisConnection, RedisConnectionException
 from toggl_connection import TogglConnection
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+)
 nc = NotionConnection()
 
 rc = RedisConnection()
@@ -140,6 +143,21 @@ def toggl_start():
     return render_template(
         "timer.html", status="Running", current_data=tc.get_current()
     )
+
+
+@app.route("/nfc", methods=["GET", "POST"])
+@cross_origin()
+def nfc():
+    if request.method == "GET":
+        return render_template("nfc.html")
+    elif request.method == "POST":
+        print("data:", request.data)
+        print("json:", request.json)
+
+        tag_data = request.json
+        print(f'tag_data: {tag_data}')
+
+        return tag_data
 
 
 @app.errorhandler(BadTokenException)

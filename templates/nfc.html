@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>NFC!</title>
+
+    <link rel="icon" type="image/png" href="static/favicon.png" />
+    <link rel="stylesheet" href="static/css/glitch.css" />
+
+    <script>
+        if (location.protocol != "https:") {
+            location.href =
+                "https:" +
+                window.location.href.substring(window.location.protocol.length);
+        }
+    </script>
+</head>
+
+<script>
+    var ChromeSamples = {
+        log: function () {
+            var line = Array.prototype.slice
+                .call(arguments)
+                .map(function (argument) {
+                    return typeof argument === "string"
+                        ? argument
+                        : JSON.stringify(argument);
+                })
+                .join(" ");
+
+            document.querySelector("#log").textContent += line + "\n";
+        },
+
+        clearLog: function () {
+            document.querySelector("#log").textContent = "";
+        },
+
+        setStatus: function (status) {
+            document.querySelector("#status").textContent = status;
+        },
+
+        setContent: function (newContent) {
+            var content = document.querySelector("#content");
+            while (content.hasChildNodes()) {
+                content.removeChild(content.lastChild);
+            }
+            content.appendChild(newContent);
+        },
+    };
+</script>
+
+<body>
+    <!--
+      This is the body of the page
+      Look at the elements and see how they appear in the rendered page on the right
+      Each element is defined using tags, with < and > indicating where each one opens and closes
+      There are elements for sections of the page, images, text, and more
+      The elements include attributes referenced in the CSS for the page style
+    -->
+
+    <!-- The wrapper and content divs set margins and positioning -->
+    <div class="wrapper">
+        <div class="content" role="main">
+            <!-- This is the start of content for our page -->
+            <h1 class="title">NFC</h1>
+
+            <img src="https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2Fillustration.svg?v=1618177344016"
+                class="illustration" alt="Editor illustration" title="Click the image!" style="max-height: 10em" />
+
+            <div class="instructions">
+                <h2>NFC live scan</h2>
+                <p>Hello</p>
+
+                <button id="scanButton">Scan</button>
+                <button id="writeButton">Write</button>
+                <!--           <button id="makeReadOnlyButton">Make Read-Only</button> -->
+            </div>
+            <div style="overflow: auto; max-width: 100vw">
+                <h3>Live Output</h3>
+                <div id="output" class="output">
+                    <div id="content"></div>
+                    <div id="status"></div>
+                    <pre id="log"></pre>
+                </div>
+            </div>
+
+            <script>
+                log = ChromeSamples.log;
+
+                if (!("NDEFReader" in window))
+                    ChromeSamples.setStatus(
+                        "Web NFC is not available. Use Chrome on Android."
+                    );
+            </script>
+        </div>
+    </div>
+    <!-- The footer holds our remix button — you can use it for structure or cut it out ✂ -->
+    <footer class="footer">Tev</footer>
+</body>
+
+<!--   <script src="/nfc_scan.js" defer></script> -->
+<script>
+    const td = new TextDecoder();
+
+    scanButton.addEventListener("click", async () => {
+        log("User clicked scan button");
+
+        try {
+
+            const abortController = new AbortController();
+            abortController.signal.onabort = event => {
+                log('Aborted!')
+            };
+
+            const ndef = new NDEFReader();
+            await ndef.scan({ signal: abortController.signal });
+            log("> Scan started");
+
+            ndef.addEventListener("readingerror", () => {
+                log("Argh! Cannot read data from the NFC tag. Try another one?");
+            });
+
+            ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                log(`> Serial Number: ${serialNumber}`);
+                log(`> Records: (${message.records.length})`);
+
+                // abortController.abort();  /* aborting makes page no longer handle tag, default app handles instead */
+
+                const data = message.records;
+
+                var tag = {
+                    serialNumber: serialNumber,
+                    theRecords: [],
+                };
+
+                for (const record of message.records) {
+                    const ndr = {
+                        recordType: record.recordType,
+                        mediaType: record.mediaType,
+                        lang: record.lang,
+                        id: record.id,
+                        encoding: record.encoding,
+                        data: td.decode(record.data),
+                    };
+
+                    tag.theRecords.push(ndr);
+                }
+
+                log(tag);
+
+                fetch("/nfc", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(tag),
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.log("Success:", data);
+                    })
+                    .catch((error) => {
+                        console.error("Error:", error);
+                    });
+            });
+        } catch (error) {
+            log("Argh! " + error);
+        }
+    });
+
+    writeButton.addEventListener("click", async () => {
+        log("User clicked write button");
+
+        try {
+            const ndef = new NDEFReader();
+            await ndef.write("Hello world!");
+            log("> Message written");
+        } catch (error) {
+            log("Argh! " + error);
+        }
+    });
+</script>
+
+</html>

@@ -4,3 +4,4 @@ notion-client
 pandas
 redis
 requests
+flask-cors
